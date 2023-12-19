@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <pthread.h>
 #include <unistd.h>
+#include <sys/time.h>
 
 
 /**
@@ -63,42 +64,49 @@ void *work(void *arg){
  */
 void *producer (void *arg){
 
-  Timer *t = (Timer *)arg;
+    Timer *t = (Timer *)arg;
 
-  // The queue where tasks are added by the producer thread
-  queue *fifo = t->queue;
+    // The queue where tasks are added by the producer thread
+    queue *fifo = t->queue;
 
-  for (int i = 0; i < t->tasksToExecute; i++) {
+    for (int i = 0; i < t->tasksToExecute; i++) {
 
-    // The queue is being filled by workfunction structs
-    workFunction in;
-    in.work = work;
-    userArgs *args = (userArgs *)malloc(sizeof(userArgs));
-    args->a = 1;
-    args->b = 2;
-    args->sum = 0;
-    in.userData = args;
+        // The queue is being filled by workfunction structs
+        workFunction in;
+        in.work = work;
+        userArgs *args = (userArgs *)malloc(sizeof(userArgs));
+        args->a = 1;
+        args->b = 2;
+        args->sum = 0;
+        in.userData = args;
 
-    printf("Adding task to queue...\n");
-    queueAdd(fifo, in);
+        printf("Adding task %d to queue...\n", i + 1);
+        queueAdd(fifo, in);
 
-    // The producer thread adds a task per period
-    usleep (t->period * 1000);
+        // The producer thread adds a task per period
+        usleep (t->period * 1000);
 
-  }
+    }
 
-  while (fifo->empty == 0)
-  {
-    workFunction out;
-    printf("Removing task from queue...\n");
-    queueDel(fifo, &out);
 
-    out.work(out.userData);
+    if(fifo->numberOfTimers == 1){
 
-    free(out.userData);
-  }
-  
-  pthread_exit(NULL);
+        workFunction termination;
+        termination.work = NULL;
+        termination.userData = NULL;
+        for(int i = 0; i < fifo->numberOfThreads; i++){
+        queueAdd(fifo, termination);
+        }
+
+    }
+    else{
+        
+        pthread_mutex_lock(&fifo->timerMut);
+        fifo->numberOfTimers--;
+        pthread_mutex_unlock(&fifo->timerMut);
+
+    }
+    pthread_exit(NULL);
 
 }
 
@@ -106,7 +114,7 @@ void *producer (void *arg){
 /**
  * @brief The function to be called at the beginning of each period.
  * 
- * @param arg 
+ * @param arg : Timer object
  * @return void* 
  */
 void *timerFnc(void *arg){
@@ -114,7 +122,7 @@ void *timerFnc(void *arg){
     pthread_attr_t attr;
     pthread_attr_init(&attr);
     pthread_t id;
-    pthread_create(&id, &attr, producer, arg);
+    pthread_create(&id, &attr, producer, arg);  
     pthread_join(id, NULL);
 }
 
@@ -129,6 +137,7 @@ void *timerFnc(void *arg){
 void timerInit(Timer *t, queue *queue, int period, int tasksToExecute, int startDelay){
 
     t->queue = queue;
+    t->queue->numberOfTimers++;
     t->period = period;
     t->tasksToExecute = tasksToExecute;
     t->startDelay = startDelay;
@@ -142,17 +151,66 @@ void timerInit(Timer *t, queue *queue, int period, int tasksToExecute, int start
 
 }
 
+/**
+ * @brief Starts the timer and the first execution of TimerFnc.
+ * 
+ * @param t : Object of type Timer
+ */
+void start(Timer *t){
 
-void *consumer (void *q){
+    t->startFnc(NULL);
+    t->timerFnc(t);
 
-  queue *fifo;
-  int i, d;
+}
 
-  fifo = (queue *)q;
 
-  for (i = 0; i < LOOP; i++) {
-    queueDel (fifo, &d);
-    usleep (50000);
-  }
-  return (NULL);
+/**
+ * @brief       Starts the timer at the given time.
+ * 
+ * @param t :   Object of type Timer
+ * @param secs : Seconds
+ * @param minutes : Minutes
+ * @param hours : Hours
+ * @param day : Day
+ * @param month : Month
+ * @param year : Year
+ */
+void startat(Timer *t, int secs, int minutes, int hours, int day, int month, int year){
+
+    // start the timer at the given time day/month/year hours:minutes:secs
+    t->startFnc(NULL);
+
+    // convert the given time to a struct timeval
+    struct tm specificTime = {0};
+    time_t t_of_day;
+
+    specificTime.tm_sec = secs;
+    specificTime.tm_min = minutes;
+    specificTime.tm_hour = hours;
+    specificTime.tm_mday = day;
+    specificTime.tm_mon = month - 1;
+    specificTime.tm_year = year - 1900;
+
+    t_of_day = mktime(&specificTime);
+
+    // get the current time
+    struct timeval now;
+    gettimeofday(&now, NULL);
+
+    // calculate the difference between the given time and the current time
+    int diff = (int)(t_of_day - now.tv_sec);
+    printf("The difference is: %d\n", diff);
+
+    // if the difference is negative, the given time has already passed
+    if(diff < 0){
+        printf("The given time has already passed!\n");
+        t->startDelay = 0;
+        return;
+    }
+    else{
+        t->startDelay = diff;
+    }
+
+    t->timerFnc(t);    
+
 }

@@ -2,8 +2,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-void queueInit (queue *q, int size){
+void queueInit (queue *q, int size, int numOfThreads){
 
+    q->numberOfTimers = 0;
+    q->numberOfThreads = numOfThreads;
     q->buf_size = size;
     q->buf = (workFunction *) malloc (size * sizeof (workFunction));
     q->empty = 1;
@@ -12,6 +14,7 @@ void queueInit (queue *q, int size){
     q->tail = 0;
     
     pthread_mutex_init (&q->mut, NULL);
+    pthread_mutex_init (&q->timerMut, NULL);
     pthread_cond_init (&q->notFull, NULL);
     pthread_cond_init (&q->notEmpty, NULL);
 
@@ -21,6 +24,7 @@ void queueInit (queue *q, int size){
 void queueDelete (queue *q){
 
     pthread_mutex_destroy (&q->mut);
+    pthread_mutex_destroy (&q->timerMut);
     pthread_cond_destroy (&q->notFull);
     pthread_cond_destroy (&q->notEmpty);
     free (q->buf);

@@ -16,12 +16,15 @@ typedef struct {
     workFunction *buf;
     long head, tail;
     int full, empty;
-    pthread_mutex_t mut;
+    pthread_mutex_t mut, timerMut; 
     pthread_cond_t notFull, notEmpty;
+
+    int numberOfTimers;
+    int numberOfThreads;
 
 } queue;
 
-void queueInit (queue *q, int size);
+void queueInit (queue *q, int size, int numOfThreads);
 
 void queueDelete (queue *q);
 

@@ -20,4 +20,8 @@ typedef struct{
 
 void timerInit(Timer *t, queue *queue, int period, int tasksToExecute, int startDelay);
 
+void start(Timer *t);
+
+void startat(Timer *t, int secs, int minutes, int hours, int day, int month, int year);
+
 #endif
