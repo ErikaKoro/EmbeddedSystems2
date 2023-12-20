@@ -6,36 +6,41 @@
 #include "thread_consumers.h"
 
 
+#define NUMBER_OF_THREADS 4
+#define QUEUE_SIZE 10
+#define RUN_TIME 5
+#define NUMBER_OF_TIMERS 1
+#define PERIOD1 1000
+#define PERIOD2 100
+#define PERIOD3 10
+#define STARTDELAY 0
+
+
 int main(int argc, char const *argv[]){
 
-    int numberOfThreads = 4;
-    int queueSize = 10;
-    int runTime = 5;
-
-    int numberOfTimers = 1;
-    // int *period = (int *)malloc(numberOfTimers * sizeof(int));
-    // period[0] = 1000;
-    // period[1] = 100;
-    int period = 1000;
-
-    int startDelay = 0;
     queue q;
-    queueInit(&q, queueSize, numberOfThreads);
+    queueInit(&q, QUEUE_SIZE, NUMBER_OF_THREADS);
 
-    Timer t;
-    timerInit(&t, &q, period, (runTime * 1000) / period, startDelay);
+    Timer t1;
+    timerInit(&t1, &q, PERIOD1, (RUN_TIME * 1000) / PERIOD1, STARTDELAY);
 
-    // Timer t2;
-    // timerInit(&t2, &q, period[1], (runTime * 1000) / period[1], startDelay);
+    Timer t2;
+    timerInit(&t2, &q, PERIOD2, (RUN_TIME * 1000) / PERIOD2, STARTDELAY);
+
+    Timer t3;
+    timerInit(&t3, &q, PERIOD3, (RUN_TIME * 1000) / PERIOD3, STARTDELAY);
 
     threadConsumers cons;
-    threadsInit(&cons, &q, numberOfThreads);
+    threadsInit(&cons, &q, NUMBER_OF_THREADS);
     
-    // t.timerFnc(&t);
-    // t2.timerFnc(&t2);
+    t1.timerFnc(&t1);
+    t2.timerFnc(&t2);
+    t3.timerFnc(&t3);
 
-    // start(&t);
-    startat(&t, 1, 1, 1, 1, 1, 1);
+    start(&t1);
+    start(&t2);
+    start(&t3);
+    // startat(&t, 36, 15, 20, 20, 12, 2023);
 
     joinThreads(&cons);
 

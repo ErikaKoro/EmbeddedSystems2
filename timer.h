@@ -16,6 +16,8 @@ typedef struct{
     void * (*errorFnc)(void *); // The function to be called if the queue is full
     void *userData;  // Data to be passed to the queue
 
+    long int *producerTimers;  // The array that holds the time that takes for each timer to add a task in the queue
+
 }Timer;
 
 void timerInit(Timer *t, queue *queue, int period, int tasksToExecute, int startDelay);

@@ -53,7 +53,8 @@ void *work(void *arg){
 
   userArgs *a = (userArgs *)arg;
   a->sum = a->a + a->b;
-  printf("\tThe sum is: %d\n", a->sum);
+//   printf("\tThe sum is: %d\n", a->sum);
+  sleep(1);
   return (NULL);
 }
 
@@ -71,6 +72,9 @@ void *producer (void *arg){
 
     for (int i = 0; i < t->tasksToExecute; i++) {
 
+        struct timeval start, end;
+        gettimeofday(&start, NULL); // get start time since epoch
+
         // The queue is being filled by workfunction structs
         workFunction in;
         in.work = work;
@@ -80,22 +84,28 @@ void *producer (void *arg){
         args->sum = 0;
         in.userData = args;
 
-        printf("Adding task %d to queue...\n", i + 1);
+        // printf("Adding task %d to queue...\n", i + 1);
         queueAdd(fifo, in);
+
+        gettimeofday(&end, NULL);  // get end time since epoch
+
+        // This array is useful for computing the time in which the task remains in the queue
+        t->producerTimers[i] = (end.tv_sec - start.tv_sec) * 1000000 + (end.tv_usec - start.tv_usec);
+        printf("\tTime to add task %d to queue: %d\n", i + 1, t->producerTimers[i]);
 
         // The producer thread adds a task per period
         usleep (t->period * 1000);
 
     }
 
-
     if(fifo->numberOfTimers == 1){
 
         workFunction termination;
         termination.work = NULL;
         termination.userData = NULL;
+        
         for(int i = 0; i < fifo->numberOfThreads; i++){
-        queueAdd(fifo, termination);
+            queueAdd(fifo, termination);
         }
 
     }
@@ -123,7 +133,7 @@ void *timerFnc(void *arg){
     pthread_attr_init(&attr);
     pthread_t id;
     pthread_create(&id, &attr, producer, arg);  
-    pthread_join(id, NULL);
+    
 }
 
 /**
@@ -147,7 +157,8 @@ void timerInit(Timer *t, queue *queue, int period, int tasksToExecute, int start
     t->timerFnc = timerFnc;
     t->errorFnc = errorFnc;
 
-    // t->userData = userData;
+    // Each timer will hold its times for adding a task in the queue
+    t->producerTimers = (long int *)malloc(sizeof(long int) * tasksToExecute);
 
 }
 
@@ -181,7 +192,7 @@ void startat(Timer *t, int secs, int minutes, int hours, int day, int month, int
     t->startFnc(NULL);
 
     // convert the given time to a struct timeval
-    struct tm specificTime = {0};
+    struct tm specificTime;
     time_t t_of_day;
 
     specificTime.tm_sec = secs;
@@ -190,27 +201,35 @@ void startat(Timer *t, int secs, int minutes, int hours, int day, int month, int
     specificTime.tm_mday = day;
     specificTime.tm_mon = month - 1;
     specificTime.tm_year = year - 1900;
+    specificTime.tm_isdst = -1;
 
     t_of_day = mktime(&specificTime);
 
-    // get the current time
-    struct timeval now;
-    gettimeofday(&now, NULL);
+    time_t now;
+    time(&now);
+    long int diff = difftime(t_of_day, now);
+    printf("diff: %ld\n", diff);
 
-    // calculate the difference between the given time and the current time
-    int diff = (int)(t_of_day - now.tv_sec);
-    printf("The difference is: %d\n", diff);
-
-    // if the difference is negative, the given time has already passed
     if(diff < 0){
         printf("The given time has already passed!\n");
-        t->startDelay = 0;
-        return;
+        t->timerFnc(t);
     }
     else{
-        t->startDelay = diff;
+        sleep(diff);
+        t->timerFnc(t);
     }
 
-    t->timerFnc(t);    
+}
+
+
+/**
+ * @brief Deletes the timer object.
+ * 
+ * @param t : Object of type Timer
+ */
+void timerDelete(Timer *t){
+
+    t->stopFnc(NULL);
+    free(t);
 
 }

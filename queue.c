@@ -1,6 +1,7 @@
 #include "queue.h"
 #include <stdlib.h>
 #include <stdio.h>
+#include <sys/time.h>
 
 void queueInit (queue *q, int size, int numOfThreads){
 
@@ -41,10 +42,13 @@ void queueAdd (queue *q, workFunction in){
     pthread_mutex_lock (&q->mut);
 
     while (q->full) {
-        printf ("producer: queue FULL.\n");
+        // printf ("producer: queue FULL.\n");
         pthread_cond_wait (&q->notFull, &q->mut);
     }
 
+    struct timeval start;
+    gettimeofday(&start, NULL);  // get start time since epoch
+    in.timestamp = start.tv_sec * 1000000 + start.tv_usec;
     q->buf[q->tail] = in; 
     q->tail++;
     
@@ -63,7 +67,7 @@ void queueDel (queue *q, workFunction *out){
     pthread_mutex_lock (&q->mut);
 
     while (q->empty) {
-        printf ("consumer: queue EMPTY.\n");
+        // printf ("consumer: queue EMPTY.\n");
         pthread_cond_wait (&q->notEmpty, &q->mut);
     }
 

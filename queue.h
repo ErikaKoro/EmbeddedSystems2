@@ -8,6 +8,8 @@ typedef struct {
     void * (*work)(void *);   // The function to be called
     void * userData;          // The argument to be passed to the function
 
+    long int timestamp;       // The time when the work function was added to the queue
+
 }workFunction;
 
 typedef struct {

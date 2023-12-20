@@ -15,10 +15,10 @@ void *consumer (void *arg){
         
         workFunction w;
         queueDel(a->q, &w);
-        printf("Consumer: work function received\n");
+        // printf("Consumer: work function received\n");
 
         if(w.work == NULL){
-            printf("Consumer: work function is NULL\n");
+            // printf("Consumer: work function is NULL\n");
             break;
         }
 
