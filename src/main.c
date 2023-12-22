@@ -57,6 +57,11 @@ int main(int argc, char const *argv[]){
     }
 
     fclose(fp);
+
+    // stop timers
+    stop(&t1);
+    stop(&t2);
+    stop(&t3);
     
     return 0;
 }
