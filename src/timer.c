@@ -19,6 +19,9 @@ void *startFnc(void *arg){
  * @param arg:
 */
 void *stopFnc(void *arg){
+
+    Timer *t = (Timer *)arg;
+    free(t->producerTimers);
     printf("Oh Bye Timer!\n");
 }
 
@@ -53,7 +56,7 @@ void *work(void *arg){
 
   userArgs *a = (userArgs *)arg;
   a->sum = a->a + a->b;
-  printf("\tThe sum is: %d\n", a->sum);
+  // printf("\tThe sum is: %d\n", a->sum);
   usleep(20000);  // sleep for 8ms
   return (NULL);
 }
@@ -93,8 +96,14 @@ void *producer (void *arg){
         t->producerTimers[i] = (end.tv_sec - start.tv_sec) * 1000000 + (end.tv_usec - start.tv_usec);
         // printf("\tTime to add task %d to queue: %d\n", i + 1, t->producerTimers[i]);
 
-        // The producer thread adds a task per period
-        usleep (t->period * 1000);
+        // Eliminate drifting
+        if(t->producerTimers[i] < t->period * 1000){
+            usleep(t->period * 1000 - t->producerTimers[i]);
+        }
+        else{
+            t->driftCounter++;
+            // printf("Drifting detected!\n");
+        }
 
     }
 
@@ -159,6 +168,7 @@ void timerInit(Timer *t, queue *queue, int period, int tasksToExecute, int start
 
     // Each timer will hold its times for adding a task in the queue
     t->producerTimers = (long int *)malloc(sizeof(long int) * tasksToExecute);
+    t->driftCounter = 0;
 
 }
 

@@ -19,9 +19,13 @@ void *consumer (void *arg){
 
     FILE *fp;
     // open file with name: "thread_id.txt"
-    char filename[35];
+    char filename[100];
     sprintf(filename, "execution_times/consumer_%d.txt", a->thread_id);
     fp = fopen(filename, "w");
+    if(fp == NULL){
+        printf("Error opening file! %s\n", filename);
+        exit(1);
+    }
 
     while(1){
         

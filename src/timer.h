@@ -18,6 +18,8 @@ typedef struct{
 
     long int *producerTimers;  // The array that holds the time that takes for each timer to add a task in the queue
 
+    int driftCounter;
+
 }Timer;
 
 void timerInit(Timer *t, queue *queue, int period, int tasksToExecute, int startDelay);

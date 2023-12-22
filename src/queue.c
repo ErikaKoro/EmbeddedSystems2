@@ -42,7 +42,7 @@ void queueAdd (queue *q, workFunction in){
     pthread_mutex_lock (&q->mut);
 
     while (q->full) {
-        printf ("producer: queue FULL.\n");
+        //printf ("producer: queue FULL.\n");
         pthread_cond_wait (&q->notFull, &q->mut);
     }
 
@@ -67,7 +67,7 @@ void queueDel (queue *q, workFunction *out){
     pthread_mutex_lock (&q->mut);
 
     while (q->empty) {
-        printf ("consumer: queue EMPTY.\n");
+        //printf ("consumer: queue EMPTY.\n");
         pthread_cond_wait (&q->notEmpty, &q->mut);
     }
 
