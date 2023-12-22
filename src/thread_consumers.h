@@ -5,10 +5,15 @@
 #include <pthread.h>
 
 
+/**
+ * @brief struct for the thread pool
+ * 
+ */
 typedef struct{
-    pthread_t *thread_id;
-    int thread_num;
-    queue *q;
+    pthread_t *thread_id;  // the array of thread ids
+    int thread_num;  // the number of threads
+    queue *q;  // the queue to be used by the threads
+    
 }threadConsumers;
 
 

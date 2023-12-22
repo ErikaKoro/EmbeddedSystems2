@@ -7,7 +7,7 @@
 
 
 #define NUMBER_OF_THREADS 4
-#define QUEUE_SIZE 10
+#define QUEUE_SIZE 50
 #define RUN_TIME 5
 #define NUMBER_OF_TIMERS 1
 #define PERIOD1 1000
@@ -44,5 +44,19 @@ int main(int argc, char const *argv[]){
 
     joinThreads(&cons);
 
+    FILE *fp;
+    fp = fopen("execution_times/producer.txt", "w");
+    for(int i = 0; i < (RUN_TIME * 1000) / PERIOD1; i++){
+        fprintf(fp, "%ld\n", t1.producerTimers[i]);
+    }
+    for(int i = 0; i < (RUN_TIME * 1000) / PERIOD2; i++){
+        fprintf(fp, "%ld\n", t2.producerTimers[i]);
+    }
+    for(int i = 0; i < (RUN_TIME * 1000) / PERIOD3; i++){
+        fprintf(fp, "%ld\n", t3.producerTimers[i]);
+    }
+
+    fclose(fp);
+    
     return 0;
 }

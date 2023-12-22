@@ -53,8 +53,8 @@ void *work(void *arg){
 
   userArgs *a = (userArgs *)arg;
   a->sum = a->a + a->b;
-//   printf("\tThe sum is: %d\n", a->sum);
-  sleep(1);
+  printf("\tThe sum is: %d\n", a->sum);
+  usleep(20000);  // sleep for 8ms
   return (NULL);
 }
 
@@ -91,7 +91,7 @@ void *producer (void *arg){
 
         // This array is useful for computing the time in which the task remains in the queue
         t->producerTimers[i] = (end.tv_sec - start.tv_sec) * 1000000 + (end.tv_usec - start.tv_usec);
-        printf("\tTime to add task %d to queue: %d\n", i + 1, t->producerTimers[i]);
+        // printf("\tTime to add task %d to queue: %d\n", i + 1, t->producerTimers[i]);
 
         // The producer thread adds a task per period
         usleep (t->period * 1000);
@@ -103,7 +103,7 @@ void *producer (void *arg){
         workFunction termination;
         termination.work = NULL;
         termination.userData = NULL;
-        
+
         for(int i = 0; i < fifo->numberOfThreads; i++){
             queueAdd(fifo, termination);
         }
