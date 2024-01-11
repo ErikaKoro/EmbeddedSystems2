@@ -19,6 +19,6 @@
 ## Compile and run
 
 ### Linux
-In order to cross-compile the code, use the terminal command `aarch64-linux-gnu-gcc -O3 -o main.out src/main.c src/timer.c src/queue.c src/thread_consumers.c  -lpthread `.
+In order to run the code on a Rasberry pi, you need to cross-compile it first by running the terminal command `aarch64-linux-gnu-gcc -O3 -o main.out src/main.c src/timer.c src/queue.c src/thread_consumers.c  -lpthread `. 
 <br/>
 
