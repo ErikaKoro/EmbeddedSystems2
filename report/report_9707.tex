@@ -1,0 +1,323 @@
+\documentclass[12pt, a4paper]{report}
+\usepackage[english]{babel}
+\usepackage{hyphenat}
+\usepackage{indentfirst}
+\usepackage{geometry}
+\usepackage{float}
+\usepackage{listings}
+\usepackage{color}
+\usepackage{hyperref}
+\usepackage{amsmath}
+\usepackage{tabularx}
+\usepackage{enumerate}
+\usepackage{graphicx}
+
+
+% Hyphenation
+\hyphenpenalty 10000
+\exhyphenpenalty 10000
+
+% hyperref
+\hypersetup{
+    colorlinks=true,
+    linkcolor=black,
+    filecolor=magenta,      
+    urlcolor=blue,
+    citecolor=blue,
+    pdftitle={Real Time Embedded Systems},
+}
+
+% colors
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+% Layout
+\geometry{a4paper, left=25mm, right=25mm, top=30mm, bottom=20mm}
+
+% Cover page
+\title{\Large{\textbf{Real Time Embedded Systems}}}
+\author{Koro Erika 9707}
+\date{January, 2024}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2
+}
+\lstset{style=mystyle}
+
+\graphicspath{ {./images} }
+
+
+\begin{document}
+    \maketitle
+    
+    \section*{Introduction}
+    The objective of this assignment is to the construction of timers in a real-time system. The code is written in C
+    and the target platform is the Raspberry Pi Zero with
+    the image provided. The code is cross-compiled on a Linux machine with the \textbf{aarch64-linux-gnu-gcc} compiler.
+    The code is then copied to the Raspberry Pi Zero and executed.
+    
+
+    \section*{Implementation}
+    Specifically, each timer object(thread-producer) will put a task in the queue every T seconds.
+    The thread consumers are created once a timer object is initialized and get activated when a producer-thread
+    puts a task in the queue. The consumers will execute
+    the task and then go back to sleep. When the timer object is destroyed, the consumers will finish their execution and then terminate.
+
+    For the proper operation of the code, when all timers have finished enqueueing tasks and all the tasks have been executed,the workers must exit.
+    To accomplish that, the last timer enqueues NULL tasks for all the workers. When a worker receives a NULL task, it exits.
+
+    \section*{Collecting Execution Times}
+    We are interested in the producer times, which means the time it takes for a timer to enqueue a task and the consumer times,
+    which means the time it takes for a worker to dequeue a task. In order to do that,
+    we use the \textbf{gettimeofday()} function which returns the time since epoch in microseconds, as shown in the pseudocode below.
+    
+
+\begin{lstlisting}[language=C]
+void *producer(void *arg) {
+
+    for (int i = 0; i < t->tasksToExecute; i++) {
+
+        struct timeval start, end;
+
+        // get start time since epoch
+        gettimeofday(&start, NULL);
+
+        workFunction in;
+
+        queueAdd(fifo, in);
+
+        // get end time since epoch
+        gettimeofday(&end, NULL);
+
+        // save the time it took to enqueue a task
+        prodTimes[i] = end - start;
+    }
+}
+
+void *consumer(void *arg) {
+
+    workFunction w;
+
+    // dequeue a task
+    queueDel(a->q, &w);
+
+    struct timeval time_deq;
+    
+    // get time in which a task was dequeued
+    gettimeofday(&time_deq, NULL);
+
+    // calculate the time that the task was in the queue
+   time_in_queue = time_deq - w.timestamp;
+
+}
+\end{lstlisting}
+
+\section*{Drifting}
+In order to eliminate drifting from the Implementation, the time that the task remains in the queue is
+calculated. Then, it is compared to the period of the timer. If the time that the 
+task remains in the queue is less than the period of the timer, then the producer sleeps for the remaining
+time.
+
+\begin{lstlisting}[language=C]
+
+    // Eliminate drifting
+    if(t->producerTimers[i] < t->period * 1000){
+        usleep(t->period * 1000 - t->producerTimers[i]);
+    }
+    else{
+        // dont sleep at all and increas the drift counter
+        t->driftCounter++;
+    }
+    
+\end{lstlisting}
+
+\newpage
+\section*{Results}
+
+The results are presented in four sections, one for each experiment. In each experiment, the mean, the median,
+the standard deviation and min max are measured for the producer and consumer times. All the tests ran for 1
+hour with queue size 50 and 4 consuming threads.
+
+\subsection*{Experiment 1}
+
+\subsubsection*{Producers}
+
+In this experiment, only the timer with 10ms period is active. The next graph shows the
+distribution of the time it took the producer to insert a task in the queue. 
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{distribution_lines_10.png}
+    \caption{Distribution of execution times for 10ms timer}
+\end{figure}
+
+The mean and the median are very close to each other, which means that the distribution is
+symmetric. The standard deviation is very small, which means that the values are close to 
+the mean. Overall the timer was able to keep the period of 10ms, without missing any deadlines.
+
+\subsubsection*{Consumers}
+
+On the consumer side, the distribution of the time it took for a worker to dequeue a task is shown
+below for a single worker. The rest of the workers had similar results.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{distribution_lines_cons10ms_0.png}
+    \caption{Distribution of execution times for 10ms timer}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{distribution_lines_cons10ms_1.png}
+    \caption{Distribution of execution times for 10ms timer}
+\end{figure}
+
+The consumption time is very consistant suggesting that the consumers
+are able to keep up with the producers without the queue getting full.
+
+\newpage
+\subsection*{Experiment 2 and 3}
+
+In this experiment, the timers with 100ms and 1000ms period are active respectively.
+The results are very similar to the previous experiment. This is expected since
+both timers have bigger periods than the previous experiment.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{distribution_lines_100.png}
+    \caption{Distribution of execution times for 100ms timer}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{distribution_lines_1000.png}
+    \caption{Distribution of execution times for 1000ms timer}
+\end{figure}
+
+\newpage
+\subsection*{Experiment 4}
+
+\subsubsection*{Producers}
+
+In this experiment, all the timers are active at the same time. 
+The distribution of the timers is shown below.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.75\textwidth]{distribution_lines_all_10.png}
+    \caption{Distribution of execution times for 10ms timer}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.75\textwidth]{distribution_lines_all_100.png}
+    \caption{Distribution of execution times for 100ms timer}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{distribution_lines_all_1000.png} 
+    \caption{Distribution of execution times for 1000ms timer}
+\end{figure}
+
+The 100ms and the 1000ms period timers are able to keep their period, but the 10ms timer
+is not. The distribution of the 10ms timer is bimodal, with the first peak at 0.73ms and
+the second at 10ms. This means that the timer is able to keep its period for the most part,
+but sometimes it misses the deadline. The median of the timer is 0.73ms, which means that the majority of the tasks are inserted
+in time.
+
+
+\subsubsection*{Consumers}
+
+The consumption time distribution for one of the consumers is shown below.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{distribution_lines_consall_0.png}
+    \caption{Distribution of execution times for 10ms timer}
+\end{figure}
+
+
+The distribution is also bimodal, with peaks at 246ms and 264ms. 
+The consumption time is substantially bigger than the previous experiments,
+which means that the queue is getting full.
+
+\subsection*{Comparison of the results}
+
+In this section the experiments 1, 2 and 3 are compared
+with experiment 4. The diagrams presented below are the 
+same as the ones presented in the previous sections but
+they are presentred side by side for easier comparison.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{distribution_lines_comparison_10_10.png}
+    \caption{Comparison of 10ms timers}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{distribution_lines_comparison_100_100.png}
+    \caption{Comparison of 100ms timers}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{distribution_lines_comparison_1000_1000.png}
+    \caption{Comparison of 1000ms timers}
+\end{figure}
+
+The comparison of the timers when running alone and when running together 
+with the other timers shows that the consistency of the timers is affected.
+In all the cases, the standard deviation is bigger when the timers are running together.
+
+This behaviour is normal since the consumer threads are not able to keep up with the 
+producers and the queue is getting full. This means that the producers have to wait
+for the queue to have space, which increases the enqueue time.
+
+\section*{CPU Usage}
+
+The average CPU usage was measured during the execution of the experiments. The results are shown below.
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|l|l|}
+    \hline
+    \textbf{Experiment} & \textbf{CPU Usage} \\ \hline
+    10 ms timer         & 1.3\%              \\ \hline
+    100 ms timer        & 0.22\%             \\ \hline
+    1000 ms timer       & 0.03\%             \\ \hline
+    All timers          & 1.79\%             \\ \hline
+    \end{tabular}
+    \caption{CPU Usage}
+\end{table}
+
+
+\section*{Real Time Operation}
+
+All the timers are able to run in real time when running alone. When all the timers are
+running simontaneously, the 10ms timer is not able to keep its period. Increasing the 
+queue size can be helpfull but the best solution is to increase the number of consumers.
+
+Finaly, the time each task takes to execute plays a big role in the real time operation.
+If the time it takes for a task to execute is bigger than the period of the timer, then
+the size of the queue will not matter, since given enough time, the queue will get full.
+
+\end{document}
