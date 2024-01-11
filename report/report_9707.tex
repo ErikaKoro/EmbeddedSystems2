@@ -68,10 +68,10 @@
     \maketitle
     
     \section*{Introduction}
-    The objective of this assignment is to the construction of timers in a real-time system. The code is written in C
+    The objective of this assignment is the construction of timers in a real-time system. The code is written in C
     and the target platform is the Raspberry Pi Zero with
     the image provided. The code is cross-compiled on a Linux machine with the \textbf{aarch64-linux-gnu-gcc} compiler.
-    The code is then copied to the Raspberry Pi Zero and executed.
+    The code is then copied to the Raspberry Pi Zero and executed. The code is available \href{https://github.com/ErikaKoro/EmbeddedSystems2}{here}.
     
 
     \section*{Implementation}
@@ -170,7 +170,7 @@ distribution of the time it took the producer to insert a task in the queue.
 
 The mean and the median are very close to each other, which means that the distribution is
 symmetric. The standard deviation is very small, which means that the values are close to 
-the mean. Overall the timer was able to keep the period of 10ms, without missing any deadlines.
+the mean. Overall the timer was able to keep the period of 10ms, without missing any deadlines(drift counter = 0).
 
 \subsubsection*{Consumers}
 
@@ -237,10 +237,9 @@ The distribution of the timers is shown below.
     \caption{Distribution of execution times for 1000ms timer}
 \end{figure}
 
-The 100ms and the 1000ms period timers are able to keep their period, but the 10ms timer
-is not. The distribution of the 10ms timer is bimodal, with the first peak at 0.73ms and
-the second at 10ms. This means that the timer is able to keep its period for the most part,
-but sometimes it misses the deadline. The median of the timer is 0.73ms, which means that the majority of the tasks are inserted
+The 100ms and the 1000ms period timers are able to keep their period(drift counter=0), but the 10ms timer
+is not(drift counter = 273939). The distribution of the 10ms timer is bimodal, with the first peak at 0.73ms and
+the second at 10ms. This means that the timer is able to keep its period for some time. The median of the timer is 0.73ms, which means that the majority of the tasks are inserted
 in time.
 
 
@@ -313,10 +312,10 @@ The average CPU usage was measured during the execution of the experiments. The 
 \section*{Real Time Operation}
 
 All the timers are able to run in real time when running alone. When all the timers are
-running simontaneously, the 10ms timer is not able to keep its period. Increasing the 
-queue size can be helpfull but the best solution is to increase the number of consumers.
+running simuntaneously, the 10ms timer is not able to keep its period. Increasing the 
+queue size can be helpful but the best solution is to increase the number of consumers.
 
-Finaly, the time each task takes to execute plays a big role in the real time operation.
+Finally, the time each task takes to execute plays a big role in the real time operation.
 If the time it takes for a task to execute is bigger than the period of the timer, then
 the size of the queue will not matter, since given enough time, the queue will get full.
 
