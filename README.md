@@ -16,14 +16,6 @@
   </p>
 </div>
 
-<details>
-  <summary>Table of Contents</summary>
-  <ol>
-    <li><a href="#compile-and-run">Complile and run</a></li>
-    <li><a href="#data">Data</a></li>
-  </ol>
-</details>
-
 ## Compile and run
 
 ### Linux
